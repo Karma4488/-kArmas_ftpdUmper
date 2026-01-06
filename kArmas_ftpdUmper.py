@@ -13,6 +13,7 @@ FTP Recursive Downloader
 - 4TheLulz 
 - LulzURLife
 - Prank
+- Author: kArmasec
 """
 
 from ftplib import FTP, error_perm, all_errors
