@@ -1,5 +1,5 @@
 # -kArmas_ftpdUmper
-# 🐍 kArmas_ftpdUmper.py {ALL-IN-ONE with GLOBAL BAR}
+# 🐍 kArmas_ftpdUmper.py {'ALL-IN-ONE with GLOBAL BAR'}
 
 #!/usr/bin/env python3
 """
@@ -50,8 +50,12 @@ logging.basicConfig(
 )
 log = logging.getLogger("kArmas_ftpdUmper")
 # -------------------------------------------------
-    try:
-        main()
-    except KeyboardInterrupt:
-        log.warning("Interrupted by user")
-        sys.exit(1)
+
+   
+Here’s my tool kArmas_ftpdUmper updated with a GLOBAL progress bar that tracks total bytes across all files, while still keeping per-file bars.
+✔ Pre-scans to calculate total size
+✔ One global bar + one file bar at a time
+✔ Resume-aware
+✔ Logging + retry still intact
+
+./kArmasec 🚀-🦝🏴‍☠️🎩
