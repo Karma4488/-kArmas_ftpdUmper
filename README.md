@@ -58,4 +58,15 @@ Here’s my tool kArmas_ftpdUmper updated with a GLOBAL progress bar that tracks
 ✔ Resume-aware
 ✔ Logging + retry still intact
 
-./kArmasec 🚀-🦝🏴‍☠️🎩
+#!/usr/bin/env python3
+"""
+kArmas_ftpdUmper
+----------------
+FTP Recursive Downloader
+- Recursive crawl
+- Per-file progress bar
+- Resume support
+- Retry logic
+- Logging to file + console
+
+Author: kArmasec 🚀+🦝+🏴‍☠️=🎩
