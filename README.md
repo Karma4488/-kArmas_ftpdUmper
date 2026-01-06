@@ -21,7 +21,7 @@ import sys
 import time
 import logging
 
-# ===================== CONFIG =====================
+# =====================CONFIG============
 FTP_HOST = "ftp.example.com"
 FTP_USER = "username"
 FTP_PASS = "password"
@@ -40,15 +40,6 @@ LOG_FILE = "kArmas_ftpdUmper.log"
 
 
 # --------------------- LOGGING ---------------------
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
-    handlers=[
-        logging.FileHandler(LOG_FILE, encoding="utf-8"),
-        logging.StreamHandler(sys.stdout),
-    ],
-)
-log = logging.getLogger("kArmas_ftpdUmper")
 # -------------------------------------------------
 
    
@@ -69,4 +60,13 @@ FTP Recursive Downloader
 - Retry logic
 - Logging to file + console
 
+kArmas_ftpdUmper that adds:
+✅ Proxy / Tor-safe DNS (SOCKS5 with socks5h → DNS resolved through Tor)
+✅ Default host set to ftp.example.com
+✅ Graceful fallback if proxy is unavailable
+
+✅ No hostname DNS leaks
+This is the correct way to make FTP DNS Tor-safe in Python.
+
 Author: kArmasec 🚀+🦝+🏴‍☠️=🎩
+knowledge is power 🛸👽
