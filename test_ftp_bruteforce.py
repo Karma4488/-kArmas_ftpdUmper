@@ -6,7 +6,9 @@ Unit tests for FTP Bruteforce module
 import unittest
 import json
 import os
+import socket
 import tempfile
+from ftplib import error_perm
 from unittest.mock import patch, MagicMock
 from ftp_bruteforce import FTPBruteforcer
 
@@ -95,16 +97,14 @@ class TestFTPBruteforcer(unittest.TestCase):
     @patch('ftp_bruteforce.FTP')
     def test_failed_credentials(self, mock_ftp_class):
         """Test failed credential authentication"""
-        from ftplib import error_perm
-        
         # Mock FTP connection to raise error_perm
         mock_ftp = MagicMock()
         mock_ftp.login.side_effect = error_perm("530 Login incorrect")
         mock_ftp_class.return_value = mock_ftp
-        
+
         bruteforcer = FTPBruteforcer(config_path=self.temp_config.name)
         success, error = bruteforcer.test_credentials('testuser', 'wrongpass')
-        
+
         self.assertFalse(success)
         self.assertIsNotNone(error)
         self.assertEqual(bruteforcer.failed_attempts, 1)
@@ -112,8 +112,6 @@ class TestFTPBruteforcer(unittest.TestCase):
     @patch('ftp_bruteforce.FTP')
     def test_connection_timeout(self, mock_ftp_class):
         """Test connection timeout handling"""
-        import socket
-
         # Mock FTP connection to raise timeout error
         mock_ftp_class.side_effect = socket.timeout("Connection timeout")
 
@@ -129,18 +127,17 @@ class TestFTPBruteforcer(unittest.TestCase):
         """Test bruteforce stops on first success when configured"""
         # Mock FTP: first two fail, third succeeds
         mock_ftp = MagicMock()
-        
+
         def login_side_effect(user, password):
             if password == "pass2":
                 return True  # Success
             else:
-                from ftplib import error_perm
                 raise error_perm("530 Login incorrect")
-        
+
         mock_ftp.login.side_effect = login_side_effect
         mock_ftp.getwelcome.return_value = "Welcome"
         mock_ftp_class.return_value = mock_ftp
-        
+
         bruteforcer = FTPBruteforcer(config_path=self.temp_config.name)
         results = bruteforcer.bruteforce()
         
@@ -151,19 +148,17 @@ class TestFTPBruteforcer(unittest.TestCase):
     @patch('ftp_bruteforce.FTP')
     def test_bruteforce_max_attempts(self, mock_ftp_class):
         """Test bruteforce respects max attempts limit"""
-        from ftplib import error_perm
-        
         # Mock FTP to always fail
         mock_ftp = MagicMock()
         mock_ftp.login.side_effect = error_perm("530 Login incorrect")
         mock_ftp_class.return_value = mock_ftp
-        
+
         bruteforcer = FTPBruteforcer(config_path=self.temp_config.name)
-        
+
         # Config has 3 passwords but max_attempts is 10
         # Since all fail, should try all 3
         results = bruteforcer.bruteforce()
-        
+
         self.assertEqual(results['total_attempts'], 3)
         self.assertEqual(results['successful_attempts'], 0)
     
@@ -178,15 +173,13 @@ class TestFTPBruteforcer(unittest.TestCase):
         
         try:
             with patch('ftp_bruteforce.FTP') as mock_ftp_class:
-                from ftplib import error_perm
-                
                 mock_ftp = MagicMock()
                 mock_ftp.login.side_effect = error_perm("530 Login incorrect")
                 mock_ftp_class.return_value = mock_ftp
-                
+
                 bruteforcer = FTPBruteforcer(config_path=self.temp_config.name)
                 results = bruteforcer.bruteforce_from_file('testuser', password_file)
-                
+
                 self.assertEqual(results['total_attempts'], 3)
         finally:
             os.unlink(password_file)
@@ -237,15 +230,13 @@ class TestFTPBruteforcerResults(unittest.TestCase):
     @patch('ftp_bruteforce.FTP')
     def test_results_structure(self, mock_ftp_class):
         """Test that results contain all expected fields"""
-        from ftplib import error_perm
-        
         mock_ftp = MagicMock()
         mock_ftp.login.side_effect = error_perm("530 Login incorrect")
         mock_ftp_class.return_value = mock_ftp
-        
+
         bruteforcer = FTPBruteforcer(config_path=self.temp_config.name)
         results = bruteforcer.bruteforce()
-        
+
         # Check all expected fields are present
         self.assertIn('total_attempts', results)
         self.assertIn('failed_attempts', results)

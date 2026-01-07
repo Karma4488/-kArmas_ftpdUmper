@@ -8,6 +8,7 @@ with configurable options and comprehensive error handling.
 Author: kArmasec
 """
 
+import argparse
 import json
 import logging
 import time
@@ -255,8 +256,6 @@ class FTPBruteforcer:
 
 def main():
     """CLI entry point for FTP bruteforcer."""
-    import argparse
-    
     parser = argparse.ArgumentParser(
         description="FTP Bruteforce Tool - Test FTP authentication",
         formatter_class=argparse.RawDescriptionHelpFormatter,
