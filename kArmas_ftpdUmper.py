@@ -2,13 +2,14 @@
 """
 kArmas_ftpdUmper
 ----------------
-FTP Recursive Downloader
+FTP Recursive Downloader & Bruteforcer
 - Recursive crawl
 - Global progress bar (all files)
 - Per-file progress bar
 - Resume support
 - Retry logic
 - Logging (file + console)
+- FTP Bruteforce capabilities
 - Made In l0v3 bY kArmasec
 - 4TheLulz 
 - LulzURLife
@@ -22,6 +23,7 @@ import os
 import sys
 import time
 import logging
+import argparse
 
 # ===================== CONFIG =====================
 FTP_HOST = "ftp.jar2.org"
@@ -201,8 +203,9 @@ def crawl(ftp, remote_dir, local_dir, global_bar):
             download_file(ftp, name, local_path, global_bar)
 
 
-def main():
-    log.info("Starting kArmas_ftpdUmper")
+def main_download():
+    """Execute FTP download/dump mode."""
+    log.info("Starting kArmas_ftpdUmper in DOWNLOAD mode")
 
     ftp = FTP(FTP_HOST, timeout=TIMEOUT)
     ftp.login(FTP_USER, FTP_PASS)
@@ -227,6 +230,80 @@ def main():
 
     ftp.quit()
     log.info("kArmas_ftpdUmper completed")
+
+
+def main_bruteforce(args):
+    """Execute FTP bruteforce mode."""
+    from ftp_bruteforce import FTPBruteforcer
+    
+    log.info("Starting kArmas_ftpdUmper in BRUTEFORCE mode")
+    
+    try:
+        bruteforcer = FTPBruteforcer(config_path=args.config, logger=log)
+        
+        if args.password_file:
+            if not args.username:
+                log.error("--username is required when using --password-file")
+                sys.exit(1)
+            bruteforcer.bruteforce_from_file(args.username, args.password_file)
+        else:
+            bruteforcer.bruteforce(username=args.username)
+            
+    except Exception as e:
+        log.error(f"Bruteforce failed: {e}")
+        sys.exit(1)
+
+
+def main():
+    """Main entry point with mode selection."""
+    parser = argparse.ArgumentParser(
+        description="kArmas_ftpdUmper - FTP Downloader & Bruteforcer",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Download mode (default)
+  python kArmas_ftpdUmper.py
+  
+  # Bruteforce mode with config
+  python kArmas_ftpdUmper.py --mode bruteforce
+  
+  # Bruteforce with custom config
+  python kArmas_ftpdUmper.py --mode bruteforce --config my_config.json
+  
+  # Bruteforce with password file
+  python kArmas_ftpdUmper.py --mode bruteforce --username admin --password-file passwords.txt
+        """
+    )
+    
+    parser.add_argument(
+        '--mode',
+        choices=['download', 'bruteforce'],
+        default='download',
+        help='Operation mode (default: download)'
+    )
+    
+    parser.add_argument(
+        '--config',
+        default='ftp_config.json',
+        help='Path to bruteforce config file (default: ftp_config.json)'
+    )
+    
+    parser.add_argument(
+        '--username',
+        help='Username for bruteforce mode (overrides config)'
+    )
+    
+    parser.add_argument(
+        '--password-file',
+        help='File containing passwords for bruteforce (one per line)'
+    )
+    
+    args = parser.parse_args()
+    
+    if args.mode == 'bruteforce':
+        main_bruteforce(args)
+    else:
+        main_download()
 
 
 if __name__ == "__main__":
