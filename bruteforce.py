@@ -130,9 +130,6 @@ class FTPBruteForce:
             return None
         
         try:
-            # Add delay for rate limiting
-            time.sleep(self.delay)
-            
             ftp = FTP(timeout=self.timeout)
             ftp.connect(self.host, self.port)
             ftp.login(username, password)
@@ -143,7 +140,7 @@ class FTPBruteForce:
                 if not self.stopped:
                     self.success = (username, password)
                     self.stopped = True
-                    log.info(f"✓ SUCCESS: {username}:{password}")
+                    log.info(f"✓ SUCCESS: {username}")
                     return (username, password)
             
         except error_perm:
@@ -154,6 +151,9 @@ class FTPBruteForce:
             # Connection or other error
             if self.verbose:
                 log.debug(f"✗ Error for {username}:{password} - {e}")
+        finally:
+            # Add delay for rate limiting after attempt
+            time.sleep(self.delay)
         
         return None
     
@@ -184,9 +184,9 @@ class FTPBruteForce:
                     pbar.update(1)
                     result = future.result()
                     if result:
-                        # Success found, cancel remaining
+                        # Success found, stop processing remaining
                         pbar.close()
-                        log.info(f"✓ Valid credentials found: {result[0]}:{result[1]}")
+                        log.info(f"✓ Valid username found: {result[0]}")
                         return result
         
         if not self.success:
@@ -215,9 +215,6 @@ class HTTPBruteForce:
             return None
         
         try:
-            # Add delay for rate limiting
-            time.sleep(self.delay)
-            
             response = requests.get(
                 self.url,
                 auth=HTTPBasicAuth(username, password),
@@ -232,7 +229,7 @@ class HTTPBruteForce:
                     if not self.stopped:
                         self.success = (username, password)
                         self.stopped = True
-                        log.info(f"✓ SUCCESS: {username}:{password}")
+                        log.info(f"✓ SUCCESS: {username}")
                         return (username, password)
             
             elif response.status_code == 401:
@@ -248,6 +245,9 @@ class HTTPBruteForce:
             # Connection or other error
             if self.verbose:
                 log.debug(f"✗ Error for {username}:{password} - {e}")
+        finally:
+            # Add delay for rate limiting after attempt
+            time.sleep(self.delay)
         
         return None
     
@@ -278,9 +278,9 @@ class HTTPBruteForce:
                     pbar.update(1)
                     result = future.result()
                     if result:
-                        # Success found, cancel remaining
+                        # Success found, stop processing remaining
                         pbar.close()
-                        log.info(f"✓ Valid credentials found: {result[0]}:{result[1]}")
+                        log.info(f"✓ Valid username found: {result[0]}")
                         return result
         
         if not self.success:

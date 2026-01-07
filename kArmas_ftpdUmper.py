@@ -373,7 +373,7 @@ def main():
             )
             
             if result:
-                log.info(f"SUCCESS! Valid credentials: {result[0]}:{result[1]}")
+                log.info(f"SUCCESS! Valid username found: {result[0]}")
                 sys.exit(0)
             else:
                 log.info("No valid credentials found.")
@@ -411,7 +411,7 @@ def main():
             )
             
             if result:
-                log.info(f"SUCCESS! Valid credentials: {result[0]}:{result[1]}")
+                log.info(f"SUCCESS! Valid username found: {result[0]}")
                 sys.exit(0)
             else:
                 log.info("No valid credentials found.")
