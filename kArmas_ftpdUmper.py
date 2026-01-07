@@ -292,7 +292,7 @@ def main_http(args):
         wordlist=wordlist,
         methods=methods,
         headers=headers,
-        proxies=proxies if proxies.get('http') else None,
+        proxies=proxies if (proxies and proxies.get('http')) else None,
         timeout=args.timeout or config.get('timeout', 10),
         max_retries=args.retries or config.get('max_retries', 3),
         delay=delay,

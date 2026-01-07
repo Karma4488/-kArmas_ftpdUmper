@@ -29,14 +29,15 @@ class HTTPBruteForcer:
     # 403 Bypass techniques
     @staticmethod
     def _apache_double_slash(url: str) -> str:
-        """Add double slash after protocol in URL path"""
+        """Add double slash in URL path after domain"""
         parsed = urlparse(url)
         if parsed.path and parsed.path != '/':
-            # Replace first slash in path with double slash
-            new_path = parsed.path.replace('/', '//', 1)
-            return urlunparse((parsed.scheme, parsed.netloc, new_path, 
+            # Insert double slash before the path: /admin -> //admin
+            new_path = '/' + parsed.path.lstrip('/')
+            return urlunparse((parsed.scheme, parsed.netloc, '/' + new_path, 
                              parsed.params, parsed.query, parsed.fragment))
-        return url + '//'
+        # If no path or just '/', add double slash at the end
+        return url.rstrip('/') + '//'
 
     BYPASS_METHODS = {
         "apache_dot": lambda url: url + "/.",
