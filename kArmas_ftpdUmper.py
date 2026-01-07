@@ -2,12 +2,13 @@
 """
 kArmas_ftpdUmper
 ----------------
-FTP Recursive Downloader
-- Recursive crawl
+FTP Recursive Downloader + HTTP Brute-forcer with 403 Bypass
+- Recursive FTP crawl
 - Global progress bar (all files)
 - Per-file progress bar
 - Resume support
 - Retry logic
+- HTTP Brute-forcing with 403 bypass techniques
 - Logging (file + console)
 - Made In l0v3 bY kArmasec
 - 4TheLulz 
@@ -22,6 +23,8 @@ import os
 import sys
 import time
 import logging
+import argparse
+import json
 
 # ===================== CONFIG =====================
 FTP_HOST = "ftp.jar2.org"
@@ -201,8 +204,9 @@ def crawl(ftp, remote_dir, local_dir, global_bar):
             download_file(ftp, name, local_path, global_bar)
 
 
-def main():
-    log.info("Starting kArmas_ftpdUmper")
+def main_ftp():
+    """Main function for FTP mode"""
+    log.info("Starting kArmas_ftpdUmper - FTP Mode")
 
     ftp = FTP(FTP_HOST, timeout=TIMEOUT)
     ftp.login(FTP_USER, FTP_PASS)
@@ -226,7 +230,180 @@ def main():
         crawl(ftp, REMOTE_ROOT, LOCAL_ROOT, global_bar)
 
     ftp.quit()
-    log.info("kArmas_ftpdUmper completed")
+    log.info("kArmas_ftpdUmper FTP completed")
+
+
+def main_http(args):
+    """Main function for HTTP brute-force mode"""
+    try:
+        from http_bruteforce import HTTPBruteForcer, load_wordlist
+    except ImportError:
+        log.error("HTTP bruteforce module not found. Please ensure http_bruteforce.py is present.")
+        sys.exit(1)
+
+    log.info("Starting kArmas_ftpdUmper - HTTP Brute-force Mode")
+
+    # Load configuration if provided
+    config = {}
+    if args.config:
+        try:
+            with open(args.config, 'r') as f:
+                config = json.load(f).get('http_bruteforce', {})
+            log.info(f"Loaded configuration from {args.config}")
+        except Exception as e:
+            log.error(f"Failed to load config: {e}")
+            sys.exit(1)
+
+    # Override config with command-line arguments
+    target_url = args.url or config.get('target_url')
+    if not target_url:
+        log.error("Target URL is required. Use --url or specify in config file.")
+        sys.exit(1)
+
+    methods = args.methods or config.get('methods', ['GET', 'POST'])
+    wordlist_path = args.wordlist or config.get('wordlist_path')
+    verbose = args.verbose or config.get('verbose', False)
+    enable_bypass = not args.no_bypass and config.get('enable_bypass', True)
+    delay = args.delay if args.delay is not None else config.get('delay', 0)
+
+    # Load wordlist
+    wordlist = []
+    if wordlist_path:
+        wordlist = load_wordlist(wordlist_path)
+        if not wordlist:
+            log.warning(f"No wordlist loaded from {wordlist_path}")
+    
+    # Parse headers
+    headers = config.get('headers', {})
+    if args.headers:
+        for header in args.headers:
+            if ':' in header:
+                key, value = header.split(':', 1)
+                headers[key.strip()] = value.strip()
+
+    # Parse proxies
+    proxies = config.get('proxies', {})
+    if args.proxy:
+        proxies = {'http': args.proxy, 'https': args.proxy}
+
+    # Initialize brute-forcer
+    bruteforcer = HTTPBruteForcer(
+        target_url=target_url,
+        wordlist=wordlist,
+        methods=methods,
+        headers=headers,
+        proxies=proxies if (proxies and proxies.get('http')) else None,
+        timeout=args.timeout or config.get('timeout', 10),
+        max_retries=args.retries or config.get('max_retries', 3),
+        delay=delay,
+        verbose=verbose,
+        enable_bypass=enable_bypass,
+        success_codes=config.get('success_codes', [200, 201, 202, 301, 302]),
+    )
+
+    # Run the appropriate mode
+    if args.mode == 'scan':
+        # Endpoint scanning mode
+        if not wordlist:
+            log.error("Wordlist is required for endpoint scanning")
+            sys.exit(1)
+        results = bruteforcer.scan_endpoints(wordlist)
+    elif args.mode == 'auth':
+        # Authentication brute-force mode
+        username = args.username or config.get('authentication', {}).get('username')
+        if not username:
+            log.error("Username is required for auth mode. Use --username")
+            sys.exit(1)
+        results = bruteforcer.brute_force(username=username, password_list=wordlist)
+    else:
+        # Default: endpoint scanning if wordlist provided
+        if wordlist:
+            results = bruteforcer.scan_endpoints(wordlist)
+        else:
+            log.error("No wordlist provided. Nothing to brute-force.")
+            sys.exit(1)
+
+    # Print summary
+    summary = bruteforcer.get_results_summary()
+    print(summary)
+    log.info(summary)
+
+    # Save results if output file specified
+    if args.output:
+        try:
+            with open(args.output, 'w') as f:
+                json.dump(results, f, indent=2)
+            log.info(f"Results saved to {args.output}")
+        except Exception as e:
+            log.error(f"Failed to save results: {e}")
+
+    log.info("kArmas_ftpdUmper HTTP completed")
+
+
+def main():
+    """Main entry point with argument parsing"""
+    parser = argparse.ArgumentParser(
+        description='kArmas_ftpdUmper - FTP Dumper & HTTP Brute-forcer with 403 Bypass',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  FTP Mode (default):
+    %(prog)s
+    
+  HTTP Endpoint Scanning:
+    %(prog)s --http --url http://example.com --wordlist wordlist.txt
+    
+  HTTP Authentication Brute-force:
+    %(prog)s --http --mode auth --url http://example.com/login --username admin --wordlist passwords.txt
+    
+  HTTP with 403 Bypass:
+    %(prog)s --http --url http://example.com/admin --wordlist wordlist.txt --verbose
+    
+  Using Configuration File:
+    %(prog)s --http --config config.json
+
+Author: kArmasec
+        """
+    )
+
+    parser.add_argument('--http', action='store_true', 
+                       help='Enable HTTP brute-force mode (default: FTP mode)')
+    parser.add_argument('--mode', choices=['scan', 'auth'], default='scan',
+                       help='HTTP mode: scan endpoints or brute-force auth (default: scan)')
+    parser.add_argument('--url', type=str,
+                       help='Target URL for HTTP brute-force')
+    parser.add_argument('--methods', nargs='+', 
+                       help='HTTP methods to use (e.g., GET POST PUT)')
+    parser.add_argument('--wordlist', type=str,
+                       help='Path to wordlist file')
+    parser.add_argument('--username', type=str,
+                       help='Username for authentication brute-force')
+    parser.add_argument('--headers', nargs='+',
+                       help='Custom headers (format: "Key: Value")')
+    parser.add_argument('--proxy', type=str,
+                       help='Proxy URL (e.g., http://127.0.0.1:8080)')
+    parser.add_argument('--timeout', type=int,
+                       help='Request timeout in seconds')
+    parser.add_argument('--retries', type=int,
+                       help='Maximum number of retries per request')
+    parser.add_argument('--delay', type=float,
+                       help='Delay between requests in seconds')
+    parser.add_argument('--no-bypass', action='store_true',
+                       help='Disable 403 bypass techniques')
+    parser.add_argument('--verbose', action='store_true',
+                       help='Enable verbose logging')
+    parser.add_argument('--config', type=str,
+                       help='Path to JSON configuration file')
+    parser.add_argument('--output', type=str,
+                       help='Output file for results (JSON format)')
+
+    args = parser.parse_args()
+
+    # Choose mode
+    if args.http:
+        main_http(args)
+    else:
+        main_ftp()
 
 
 if __name__ == "__main__":

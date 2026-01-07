@@ -1,0 +1,35 @@
+{
+  "http_bruteforce": {
+    "target_url": "http://example.com/admin",
+    "methods": ["GET", "POST"],
+    "timeout": 10,
+    "max_retries": 3,
+    "delay": 0.5,
+    "verbose": true,
+    "enable_bypass": true,
+    "success_codes": [200, 201, 202, 301, 302],
+    "headers": {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    },
+    "proxies": {
+      "http": null,
+      "https": null
+    },
+    "wordlist_path": "wordlist.txt",
+    "authentication": {
+      "username": null,
+      "password_list": null
+    }
+  },
+  "ftp_dump": {
+    "host": "ftp.example.com",
+    "username": "anonymous",
+    "password": "guest@",
+    "remote_root": "/",
+    "local_root": "ftp_dump",
+    "chunk_size": 1048576,
+    "timeout": 30,
+    "max_retries": 3,
+    "retry_delay": 5
+  }
+}
