@@ -2,13 +2,14 @@
 """
 kArmas_ftpdUmper
 ----------------
-FTP Recursive Downloader
+FTP Recursive Downloader & Brute Force Tool
 - Recursive crawl
 - Global progress bar (all files)
 - Per-file progress bar
 - Resume support
 - Retry logic
 - Logging (file + console)
+- FTP/HTTP Brute-force with built-in wordlists
 - Made In l0v3 bY kArmasec
 - 4TheLulz 
 - LulzURLife
@@ -22,6 +23,7 @@ import os
 import sys
 import time
 import logging
+import argparse
 
 # ===================== CONFIG =====================
 FTP_HOST = "ftp.jar2.org"
@@ -201,15 +203,25 @@ def crawl(ftp, remote_dir, local_dir, global_bar):
             download_file(ftp, name, local_path, global_bar)
 
 
-def main():
-    log.info("Starting kArmas_ftpdUmper")
+def main_dump(host=None, user=None, password=None, remote_root=None, 
+              local_root=None, timeout=None):
+    """Run FTP dump mode (original functionality)."""
+    # Use provided arguments or fall back to config
+    host = host or FTP_HOST
+    user = user or FTP_USER
+    password = password or FTP_PASS
+    remote_root = remote_root or REMOTE_ROOT
+    local_root = local_root or LOCAL_ROOT
+    timeout = timeout or TIMEOUT
+    
+    log.info("Starting kArmas_ftpdUmper in DUMP mode")
 
-    ftp = FTP(FTP_HOST, timeout=TIMEOUT)
-    ftp.login(FTP_USER, FTP_PASS)
+    ftp = FTP(host, timeout=timeout)
+    ftp.login(user, password)
     ftp.set_pasv(True)
 
     log.info("Scanning remote tree for total size...")
-    total_bytes = scan_tree(ftp, REMOTE_ROOT)
+    total_bytes = scan_tree(ftp, remote_root)
     log.info(f"Total size: {total_bytes / (1024**2):.2f} MB")
 
     with tqdm(
@@ -223,15 +235,195 @@ def main():
                    "[{elapsed}<{remaining}, {rate_fmt}]",
     ) as global_bar:
 
-        crawl(ftp, REMOTE_ROOT, LOCAL_ROOT, global_bar)
+        crawl(ftp, remote_root, local_root, global_bar)
 
     ftp.quit()
     log.info("kArmas_ftpdUmper completed")
 
 
-if __name__ == "__main__":
+def parse_arguments():
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description="kArmas_ftpdUmper - FTP Dumper & Brute Force Tool",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # FTP Dump mode (original functionality)
+  %(prog)s --mode dump --host ftp.example.com --user john --pass secret
+  
+  # FTP Brute-force with built-in credentials
+  %(prog)s --mode ftp-bruteforce --host ftp.example.com --wordlist ftp-credentials
+  
+  # FTP Brute-force with separate username/password lists
+  %(prog)s --mode ftp-bruteforce --host ftp.example.com \\
+      --username-list common-usernames --password-list common-passwords
+  
+  # HTTP Brute-force with built-in credentials
+  %(prog)s --mode http-bruteforce --url http://example.com/admin \\
+      --wordlist http-credentials
+  
+  # Use custom wordlist
+  %(prog)s --mode ftp-bruteforce --host ftp.example.com \\
+      --custom-wordlist /path/to/wordlist.txt
+
+Ethical Use Notice:
+  This tool is for authorized security testing only. Unauthorized access
+  to systems is illegal. Always obtain written permission before testing.
+        """
+    )
+    
+    # Mode selection
+    parser.add_argument(
+        '--mode',
+        choices=['dump', 'ftp-bruteforce', 'http-bruteforce'],
+        default='dump',
+        help='Operation mode (default: dump)'
+    )
+    
+    # Common options
+    parser.add_argument('--host', help='FTP host (for dump and ftp-bruteforce modes)')
+    parser.add_argument('--port', type=int, default=21, help='FTP port (default: 21)')
+    parser.add_argument('--url', help='HTTP URL (for http-bruteforce mode)')
+    parser.add_argument('--timeout', type=int, default=TIMEOUT, 
+                       help=f'Connection timeout in seconds (default: {TIMEOUT})')
+    parser.add_argument('--verbose', '-v', action='store_true',
+                       help='Enable verbose output')
+    
+    # Dump mode options
+    parser.add_argument('--user', help='FTP username (for dump mode)')
+    parser.add_argument('--pass', dest='password', help='FTP password (for dump mode)')
+    parser.add_argument('--remote-root', default=REMOTE_ROOT,
+                       help=f'Remote directory to dump (default: {REMOTE_ROOT})')
+    parser.add_argument('--local-root', default=LOCAL_ROOT,
+                       help=f'Local directory for dump (default: {LOCAL_ROOT})')
+    
+    # Brute-force wordlist options
+    parser.add_argument('--wordlist',
+                       help='Built-in credential wordlist name (e.g., ftp-credentials, http-credentials)')
+    parser.add_argument('--username-list',
+                       help='Built-in username wordlist name (e.g., common-usernames)')
+    parser.add_argument('--password-list',
+                       help='Built-in password wordlist name (e.g., common-passwords)')
+    parser.add_argument('--custom-wordlist',
+                       help='Path to custom wordlist file (username:password format)')
+    
+    # Brute-force performance options
+    parser.add_argument('--delay', type=float, default=0.5,
+                       help='Delay between attempts in seconds (default: 0.5)')
+    parser.add_argument('--threads', type=int, default=3,
+                       help='Number of concurrent threads (default: 3, max: 10)')
+    
+    return parser.parse_args()
+
+
+def main():
+    """Main entry point."""
+    args = parse_arguments()
+    
+    # Set log level
+    if args.verbose:
+        log.setLevel(logging.DEBUG)
+    
     try:
-        main()
+        if args.mode == 'dump':
+            # FTP Dump mode
+            if not args.host and not FTP_HOST:
+                log.error("Error: --host is required for dump mode")
+                sys.exit(1)
+            
+            main_dump(
+                host=args.host,
+                user=args.user,
+                password=args.password,
+                remote_root=args.remote_root,
+                local_root=args.local_root,
+                timeout=args.timeout
+            )
+            
+        elif args.mode == 'ftp-bruteforce':
+            # FTP Brute-force mode
+            if not args.host:
+                log.error("Error: --host is required for ftp-bruteforce mode")
+                sys.exit(1)
+            
+            # Check wordlist options
+            if not (args.wordlist or args.custom_wordlist or 
+                   (args.username_list and args.password_list)):
+                log.error("Error: Must specify --wordlist, --custom-wordlist, or both --username-list and --password-list")
+                sys.exit(1)
+            
+            # Import brute force module
+            try:
+                from bruteforce import run_ftp_bruteforce
+            except ImportError:
+                log.error("Error: bruteforce module not found. Ensure bruteforce.py is in the same directory.")
+                sys.exit(1)
+            
+            result = run_ftp_bruteforce(
+                host=args.host,
+                port=args.port,
+                wordlist=args.wordlist,
+                username_list=args.username_list,
+                password_list=args.password_list,
+                custom_wordlist=args.custom_wordlist,
+                timeout=args.timeout,
+                delay=args.delay,
+                threads=args.threads,
+                verbose=args.verbose
+            )
+            
+            if result:
+                log.info(f"SUCCESS! Valid username found: {result[0]}")
+                sys.exit(0)
+            else:
+                log.info("No valid credentials found.")
+                sys.exit(1)
+        
+        elif args.mode == 'http-bruteforce':
+            # HTTP Brute-force mode
+            if not args.url:
+                log.error("Error: --url is required for http-bruteforce mode")
+                sys.exit(1)
+            
+            # Check wordlist options
+            if not (args.wordlist or args.custom_wordlist or 
+                   (args.username_list and args.password_list)):
+                log.error("Error: Must specify --wordlist, --custom-wordlist, or both --username-list and --password-list")
+                sys.exit(1)
+            
+            # Import brute force module
+            try:
+                from bruteforce import run_http_bruteforce
+            except ImportError:
+                log.error("Error: bruteforce module not found. Ensure bruteforce.py is in the same directory.")
+                sys.exit(1)
+            
+            result = run_http_bruteforce(
+                url=args.url,
+                wordlist=args.wordlist,
+                username_list=args.username_list,
+                password_list=args.password_list,
+                custom_wordlist=args.custom_wordlist,
+                timeout=args.timeout,
+                delay=args.delay,
+                threads=args.threads,
+                verbose=args.verbose
+            )
+            
+            if result:
+                log.info(f"SUCCESS! Valid username found: {result[0]}")
+                sys.exit(0)
+            else:
+                log.info("No valid credentials found.")
+                sys.exit(1)
+    
     except KeyboardInterrupt:
         log.warning("Interrupted by user")
         sys.exit(1)
+    except Exception as e:
+        log.error(f"Error: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
