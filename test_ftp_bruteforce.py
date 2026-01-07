@@ -7,7 +7,7 @@ import unittest
 import json
 import os
 import tempfile
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from ftp_bruteforce import FTPBruteforcer
 
 
@@ -112,14 +112,14 @@ class TestFTPBruteforcer(unittest.TestCase):
     @patch('ftp_bruteforce.FTP')
     def test_connection_timeout(self, mock_ftp_class):
         """Test connection timeout handling"""
-        from ftplib import all_errors
-        
+        import socket
+
         # Mock FTP connection to raise timeout error
-        mock_ftp_class.side_effect = all_errors("Timeout")
-        
+        mock_ftp_class.side_effect = socket.timeout("Connection timeout")
+
         bruteforcer = FTPBruteforcer(config_path=self.temp_config.name)
         success, error = bruteforcer.test_credentials('testuser', 'anypass')
-        
+
         self.assertFalse(success)
         self.assertIsNotNone(error)
         self.assertEqual(bruteforcer.failed_attempts, 1)
