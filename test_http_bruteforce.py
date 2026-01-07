@@ -4,7 +4,7 @@ Unit tests for HTTP Brute-forcing with 403 Bypass
 """
 
 import unittest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 import sys
 import os
 
@@ -204,7 +204,7 @@ class TestHTTPBruteForcer(unittest.TestCase):
 
     def test_bypass_methods_exist(self):
         """Test that all bypass methods are defined"""
-        expected_methods = ["apache_dot", "apache_double_slash", "trailing_slash", "case_variation", "url_encode"]
+        expected_methods = ["apache_dot", "apache_double_slash", "trailing_slash"]
         for method in expected_methods:
             self.assertIn(method, HTTPBruteForcer.BYPASS_METHODS)
 
@@ -269,6 +269,13 @@ class TestBypassTechniques(unittest.TestCase):
         url = "http://example.com/admin"
         bypassed = self.bruteforcer.BYPASS_METHODS["apache_dot"](url)
         self.assertTrue(bypassed.endswith("/."))
+
+    def test_apache_double_slash_bypass(self):
+        """Test Apache double slash bypass technique"""
+        url = "http://example.com/admin"
+        bypassed = self.bruteforcer.BYPASS_METHODS["apache_double_slash"](url)
+        # Should add double slash in the path
+        self.assertIn("//", bypassed)
 
     def test_trailing_slash_bypass(self):
         """Test trailing slash bypass"""

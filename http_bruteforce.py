@@ -17,7 +17,7 @@ import logging
 import time
 from typing import Dict, List, Optional, Tuple
 from tqdm import tqdm
-import itertools
+from urllib.parse import urlparse, urlunparse
 
 # Configure logging
 log = logging.getLogger("http_bruteforce")
@@ -27,12 +27,21 @@ class HTTPBruteForcer:
     """HTTP Brute-forcing class with 403 bypass capabilities"""
 
     # 403 Bypass techniques
+    @staticmethod
+    def _apache_double_slash(url: str) -> str:
+        """Add double slash after protocol in URL path"""
+        parsed = urlparse(url)
+        if parsed.path and parsed.path != '/':
+            # Replace first slash in path with double slash
+            new_path = parsed.path.replace('/', '//', 1)
+            return urlunparse((parsed.scheme, parsed.netloc, new_path, 
+                             parsed.params, parsed.query, parsed.fragment))
+        return url + '//'
+
     BYPASS_METHODS = {
         "apache_dot": lambda url: url + "/.",
-        "apache_double_slash": lambda url: url.replace("://", "://", 1).replace("/", "//", 1) if url.count("/") > 2 else url + "//",
+        "apache_double_slash": lambda url: HTTPBruteForcer._apache_double_slash(url),
         "trailing_slash": lambda url: url + "/" if not url.endswith("/") else url,
-        "case_variation": lambda url: url,  # Applied separately
-        "url_encode": lambda url: url,  # Applied with percent encoding
     }
 
     BYPASS_HEADERS = [
@@ -238,9 +247,15 @@ class HTTPBruteForcer:
             if self.delay:
                 time.sleep(self.delay)
 
-            # Set the header value to the original path
+            # Set the header value to the original path using urllib.parse
             header_key = list(bypass_header.keys())[0]
-            header_with_value = {header_key: url.split("://")[1].split("/", 1)[1] if "/" in url.split("://")[1] else "/"}
+            try:
+                parsed_url = urlparse(url)
+                path = parsed_url.path if parsed_url.path else "/"
+                header_with_value = {header_key: path}
+            except Exception as e:
+                log.debug(f"Failed to parse URL for header bypass: {e}")
+                continue
 
             response, error = self._make_request(url, method, additional_headers=header_with_value)
 
