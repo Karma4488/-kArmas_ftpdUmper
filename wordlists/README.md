@@ -10,18 +10,18 @@ This directory contains common wordlists for brute-force attacks on various serv
 - Includes default admin accounts, service accounts, and common user names
 
 ### `common-passwords.txt`
-- Contains 100+ common passwords
+- Contains 103 common passwords
 - Includes weak passwords, default passwords, and common patterns
 - Suitable for testing password security across all services
 
 ### `ftp-credentials.txt`
-- FTP-specific username:password combinations
+- Contains 27 FTP-specific username:password combinations
 - Format: `username:password` (one per line)
 - Contains default FTP credentials for various systems
 - Includes anonymous FTP login patterns
 
 ### `http-credentials.txt`
-- HTTP Basic Authentication credentials
+- Contains 26 HTTP Basic Authentication credentials
 - Format: `username:password` (one per line)
 - Common defaults for web admin panels and protected directories
 - Suitable for HTTP/HTTPS Basic Auth attacks

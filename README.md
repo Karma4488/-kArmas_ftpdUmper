@@ -97,10 +97,10 @@ The tool includes optimized wordlists in the `wordlists/` directory:
 
 | Wordlist | Description | Entries |
 |----------|-------------|---------|
-| `common-usernames.txt` | Common usernames across all services | ~21 |
-| `common-passwords.txt` | Common weak passwords and defaults | ~100 |
-| `ftp-credentials.txt` | FTP-specific username:password pairs | ~25 |
-| `http-credentials.txt` | HTTP Basic Auth credential pairs | ~25 |
+| `common-usernames.txt` | Common usernames across all services | 21 |
+| `common-passwords.txt` | Common weak passwords and defaults | 103 |
+| `ftp-credentials.txt` | FTP-specific username:password pairs | 27 |
+| `http-credentials.txt` | HTTP Basic Auth credential pairs | 26 |
 
 For more details, see [wordlists/README.md](wordlists/README.md)
 
